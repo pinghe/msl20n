@@ -1,0 +1,15 @@
+<plural($n) {
+    $n == 0 ? "zero" :
+    $n == 1 ? "one" :
+              "many"
+}>
+
+<objectsWithCount[plural($objectsNum)] {
+    zero: "没有对象",
+    one: "1个对象",
+    many: "{{ $objectsNum }}个对象",
+}>
+
+<setObjectsNumber "设置对象数量">
+
+<overlayed "This paragraph tests <strong>overlaying nodes</strong>. 测试数量: <input>.">

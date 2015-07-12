@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html class="no-js" ms-controller="mainctrl">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Test ms-l20n app</title>
+    <script src="vendor/avalon/avalon.modern.js" data-main="main.js"></script>
+    <style>
+    .ms-controller,
+    .ms-important {
+        visibility: hidden;
+    }
+    
+    div {
+        margin: 20px 0;
+    }
+    
+    div[data-l20n="overlayed"] > strong::after {
+        content: attr(data-result);
+    }
+    </style>
+</head>
+
+<body>
+    <p data-l20n="{{ l20nId }}"></p>
+    <input type="number" ng-model="data.objectsNum">
+    <div>
+        <a href="#" ms-if="mylocale !== 'pl'" data-l20n-changeLocale="pl">Wersja polska</a>
+        <a href="#" ms-if="mylocale !== 'zh-CN'" data-l20n-changeLocale="zh-CN">中文版本</a>
+        <a href="#" ms-if="mylocale !== 'en-US'" data-l20n-changeLocale="en-US">English version</a>
+    </div>
+    <div data-l20n="overlayed">
+        <strong data-result=" (Attribute: {{ data.testNumber }}) "></strong>
+        <input type="number" ms-duplex="data.testNumber">
+    </div>
+</body>
+
+</html>
