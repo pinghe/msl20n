@@ -5,13 +5,17 @@ define(['msl20n', 'l20n'], function(msl20n, l20n) {
 
     msl20n.define({
         $id: mainctrl,
+        vm.$skipArray = ["l20n"]
         data: {
             testNumber: 0,
             objectsNum: 3,
         },
-        l20nId: "objectsWithCount"
+        l20nId: "objectsWithCount",
+        l20n: {
+            
+        }
     })
-
+    msl20n.scan();
 });
 
 

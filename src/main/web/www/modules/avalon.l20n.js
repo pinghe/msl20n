@@ -13,8 +13,17 @@ define(["L20n", "avalon"], function(MSL20n, avalon) {
         var vmodel = avalon.define(data.l20nId, function(vm) {
             avalon.mix(vm, options) //这视情况使用浅拷贝或深拷贝avalon.mix(true, vm, options)
             vm.$init = function() { //初始化组件的界面，最好定义此方法，让框架对它进行自动化配置
-                avalon(element).addClass("ui-tabs ui-widget ui-widget-content ui-corner-all")
+                avalon(element).addClass("ui-widget ui-widget-content ui-corner-all")
+
+                var ctx = MSL20n.getContext(options.l20nctxid);
+
                     // ★★★设置动态模板，注意模块上所有占位符都以“MS_OPTION_XXX”形式实现
+                ctx.linkResource(options.linkResource);
+                ctx.localize(['hello', 'new'], function(l10n) {
+                    var node = document.querySelector('[data-l10n-id=hello]');
+                    node.textContent = l10n.entities.hello.value;
+                    node.classList.remove('hidden');
+                });
                 var tablist = tabHTML
                     .replace("MS_OPTION_EVENT", vmodel.event)
                     .replace("MS_OPTION_REMOVABLE", vmodel.removable ? closeHTML : "")
@@ -79,9 +88,11 @@ define(["L20n", "avalon"], function(MSL20n, avalon) {
         return vmodel //必须返回组件VM
     }
     widget.defaults = { //默认配置项
-        initlocale: navigator.language || navigator.browserLanguage,
-        active: 0, //默认打开第几个面板
-        event: "click", //切换面板的事件，移过(mouseenter)还是点击(click)
+        l20nctxid: "", // 可以不设置，默认是 document.location.host
+        l20nId: "", // 国际化节点id
+        initlocale: navigator.language || navigator.browserLanguage, //页面初始打开时默认语言，未设置则为浏览器当前语言
+        linkResource: "", //加载国际化资源文件，必须设置
+        // event: "click", //切换面板的事件，移过(mouseenter)还是点击(click)
     }
     return avalon
 
