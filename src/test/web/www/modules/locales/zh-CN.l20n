@@ -13,3 +13,5 @@
 <setObjectsNumber "设置对象数量">
 
 <overlayed "This paragraph tests <strong>overlaying nodes</strong>. 测试数量: <input>.">
+
+<testp "段落">

@@ -3,13 +3,19 @@
  */
 'use strict';
 
-require.config({//第一块，配置
+require.config({ //第一块，配置
     baseUrl: './modules/',
     paths: {
-        main: '../main',
-        avalon: "../vendor/avalon/avalon.mobile",
-        l20n: '../vendor/l20n/l20n',
-        msl20n: '../../../../main/web/www/modules/avalon.l20n'
+        'main': '../main',
+        'avalon': "../vendor/avalon/avalon.modern",
+        // l20n: '../vendor/l20n/l20n',
+        // 'l20n': '../../../../test/web/www/vendor/l20n/l20n',
+        'l20n/platform': 'client/l20n/platform'
+        'msl20n': '../../../../main/web/www/modules/avalon.widget.l20n'
     },
-    deps: ['./app']
+    // deps: ['./app']
 });
+
+require(["app"], function() {
+    console.log("APP 加载完毕")
+})
