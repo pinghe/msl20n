@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html class="no-js" ms-controller="mainctrl">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Test ms-l20n app</title>
+    <link rel="localization" href="modules/locales/l20n.json">
+    <script src="vendor/require/require.min.js" data-main="mainl20n.js"></script>
+    <style>
+    .ms-controller,
+    .ms-important {
+        visibility: hidden;
+    }
+    
+/*    div {
+        margin: 20px 0;
+    }*/
+    
+/*    div[data-l10n-id="overlayed"] > strong::after {
+        content: attr(data-result);
+    }*/
+    </style>
+</head>
+
+<body>
+    <p>l20n test</p>
+    <p data-l10n-id="testp"></p>
+<!--     <div ms-widget="l20n" data-l10n-id="overlayed">
+        <strong data-result=" (Attribute: {{data.testNumber}}) "></strong>
+        <input type="number" ms-duplex="data.testNumber">
+    </div> -->
+</body>
+
+</html>
