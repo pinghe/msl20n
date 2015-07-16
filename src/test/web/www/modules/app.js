@@ -10,11 +10,11 @@ define(['msl20n'], function(avalon) {
                 testNumber: 4,
                 objectsNum: 3,
             },
-            l20nId: "objectsWithCount",
+            l20nI18nId: "objectsWithCount",
             l20n: {
                 ctxid: "test", // 可以不设置，默认是 document.location.host
-                initlocale: navigator.language || navigator.browserLanguage, //页面初始打开时默认语言，未设置则为浏览器当前语言
-                linkResource: "modules/locales/l20n.json", //加载国际化资源文件，必须设置
+                initlocale: 'en-US', //页面初始打开时默认语言，未设置则为浏览器当前语言
+                manifestResource: "modules/locales/l20n.json", //加载国际化资源文件，必须设置
             }
         })
         // $scope.$watch('data.objectsNum', function(newValue) {
