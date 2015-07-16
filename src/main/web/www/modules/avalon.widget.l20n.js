@@ -7,7 +7,7 @@
  */
 define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Intl, io, avalon) {
 
-    var singleton = (function() {
+    var singletonCtxs = (function() {
         // {id1: {ctx: ctx1, currentLocale: <currentLocale>, previousLocale: <previousLocale>, manifestResource: <manifestResource>}, id2: {ctx: ctx2, currentLocale: <currentLocale>, , previousLocale: <previousLocale>, manifestResource: <manifestResource>}}
         var ctxArray = {};
 
@@ -104,7 +104,7 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
         var options = data.l20nOptions, //★★★取得配置项
             msl20n;
 
-        msl20n = singleton.getInstance(options.ctxid, options.initlocale, options.manifestResource);
+        msl20n = singletonCtxs.getInstance(options.ctxid, options.initlocale, options.manifestResource);
 
         var vmodel = avalon.define(data.l20nId, function(vm) {
             avalon.mix(vm, options) //这视情况使用浅拷贝或深拷贝avalon.mix(true, vm, options)
@@ -117,7 +117,8 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
                     //     element.classList.remove('hidden');
                     // });
                     msl20n.ctx.addEventListener('ready', function() {
-                        // element.textContent = msl20n.ctx.getSync(options.id);
+                        // 问题：id 如果是 avalon vm 变量，未被求值，仍然是 {{xxx}}，期望id能支持变量和过滤器
+                        element.textContent = msl20n.ctx.getSync(options.id);
                         avalon(element).classList.remove('hidden');
                     });
 
@@ -163,7 +164,7 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
 
     // vm.availableLocales = []
     avalon.requestLocales = function(l20nOpt) {
-        var msl20n = singleton.getInstance(l20nOpt.ctxid, l20nOpt.initlocale, l20nOpt.manifestResource)
+        var msl20n = singletonCtxs.getInstance(l20nOpt.ctxid, l20nOpt.initlocale, l20nOpt.manifestResource)
         if (l20nOpt.initlocale === undefined) {
             msl20n.ctx.requestLocales()
         } else {
@@ -173,18 +174,18 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
     };
 
     avalon.updateL20nData = function() {
-        var ctx = singleton(ctxid),
-            event;
+        // var ctx = singleton(ctxid),
+        //     event;
 
-        ctx.updateData.apply(msl20n.ctx, arguments);
+        // ctx.updateData.apply(msl20n.ctx, arguments);
 
-        event = document.createEvent('HTMLEvents');
-        event.initEvent('uiL20n:dataupdated', true, true);
-        document.dispatchEvent(event);
+        // event = document.createEvent('HTMLEvents');
+        // event.initEvent('uiL20n:dataupdated', true, true);
+        // document.dispatchEvent(event);
     };
 
     avalon.currentLocale = function(ctxid) {
-        var ctx = singleton(ctxid)
+        var ctx = singleton.getInstance(ctxid)
         return ctx.currentLocale;
     }
 
