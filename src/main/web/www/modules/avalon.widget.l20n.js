@@ -119,7 +119,7 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
                     msl20n.ctx.addEventListener('ready', function() {
                         // 问题：id 如果是 avalon vm 变量，未被求值，仍然是 {{xxx}}，期望id能支持变量和过滤器
                         element.textContent = msl20n.ctx.getSync(options.id);
-                        avalon(element).classList.remove('hidden');
+                        element.classList.remove('hidden');
                     });
 
                     // 注册全局locale切换响应事件
