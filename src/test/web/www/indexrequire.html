@@ -16,22 +16,27 @@
         margin: 20px 0;
     }
     
-    div[data-l20n="overlayed"] > strong::after {
+    div[data-l20n-id="overlayed"] > strong::after {
         content: attr(data-result);
     }
     </style>
 </head>
 
 <body>
+    <p ms-visible="currentLocale == 'pl'">====</p>
+    <button ms-click="changeLocale('en-US')">en-US</button>
+    <button ms-click="changeLocale('pl')">pl</button>
+    <button ms-click="changeLocale('zh-CN')">zh-CN</button>
+
     <p ms-widget="l20n" data-l20n-id="testp">123</p>
     <p ms-widget="l20n" data-l20n-id="{{l20nI18nId}}"></p>
     <input type="number" ms-duplex="data.objectsNum">
     <div>
-        <a href="#" ms-if="currentlocale !== 'pl'" ms-widget="l20n" data-l20n-changeLocale="pl">Wersja polska</a>
-        <a href="#" ms-if="mylocale !== 'zh-CN'" ms-widget="l20n" data-l20n-changeLocale="zh-CN">中文版本</a>
-        <a href="#" ms-if="mylocale !== 'en-US'" ms-widget="l20n" data-l20n-changeLocale="en-US">English version</a>
+        <a href="#" ms-visible="currentLocale != 'pl'" ms-click="changeLocale('pl')">Wersja polska</a>
+        <a href="#" ms-visible="currentLocale != 'zh-CN'" ms-click="changeLocale('zh-CN')">中文版本</a>
+        <a href="#" ms-visible="currentLocale != 'en-US'" ms-click="changeLocale('en-US')">English version</a>
     </div>
-    <div ms-widget="l20n" data-l20n="overlayed">
+    <div ms-widget="l20n" data-l20n-id="overlayed">
         <strong data-result=" (Attribute: {{data.testNumber}}) "></strong>
         <input type="number" ms-duplex="data.testNumber">
     </div>

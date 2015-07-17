@@ -11,15 +11,15 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
         // {id1: {ctx: ctx1, currentLocale: <currentLocale>, previousLocale: <previousLocale>, manifestResource: <manifestResource>}, id2: {ctx: ctx2, currentLocale: <currentLocale>, , previousLocale: <previousLocale>, manifestResource: <manifestResource>}}
         var ctxArray = {};
 
-        function init(ctxid, initlocale, manifestResource) {
+        function init(ctxid, initLocale, manifestResource) {
             ctxArray[ctxid] = {};
             ctxArray[ctxid].ctx = MSL20n.getContext(ctxid);
-            initparam(ctxid, initlocale, manifestResource);
+            initparam(ctxid, initLocale, manifestResource);
             return ctxArray[ctxid];
         }
 
-        function initparam(ctxid, initlocale, manifestResource) {
-            ctxArray[ctxid].currentLocale = initlocale || navigator.language || navigator.browserLanguage
+        function initparam(ctxid, initLocale, manifestResource) {
+            ctxArray[ctxid].currentLocale = initLocale || navigator.language || navigator.browserLanguage
             if (manifestResource !== undefined) {
                 ctxArray[ctxid].manifestResource = manifestResource
                 loadManifest(ctxArray[ctxid])
@@ -27,8 +27,9 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
 
         }
         return {
-            getInstance: function(ctxid, initlocale, manifestResource) {
-                return ctxArray[ctxid] || init(ctxid, initlocale, manifestResource);
+            ctxArray: ctxArray,
+            getInstance: function(ctxid, initLocale, manifestResource) {
+                return ctxArray[ctxid] || init(ctxid, initLocale, manifestResource);
             }
         }
     })();
@@ -102,74 +103,115 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
 
     var widget = avalon.ui.l20n = function(element, data, vmodels) {
         var options = data.l20nOptions, //★★★取得配置项
+            $element = avalon(element),
+            l20nModel,
             msl20n;
 
-        msl20n = singletonCtxs.getInstance(options.ctxid, options.initlocale, options.manifestResource);
 
-        var vmodel = avalon.define(data.l20nId, function(vm) {
-            avalon.mix(vm, options) //这视情况使用浅拷贝或深拷贝avalon.mix(true, vm, options)
-            vm.$init = function() { //初始化组件的界面，最好定义此方法，让框架对它进行自动化配置
-                    avalon(element).addClass("ui-widget ui-widget-content ui-corner-all")
+        msl20n = singletonCtxs.getInstance(options.ctxid, options.initLocale, options.manifestResource);
 
-                    // ★★★设置动态模板，注意模块上所有占位符都以“MS_OPTION_XXX”形式实现
-                    // msl20n.ctx.localize([options.id], function(l10n) {
-                    //     element.textContent = l10n.entities[options.id].value;
-                    //     element.classList.remove('hidden');
-                    // });
-                    msl20n.ctx.addEventListener('ready', function() {
-                        // 问题：id 如果是 avalon vm 变量，未被求值，仍然是 {{xxx}}，期望id能支持变量和过滤器
-                        element.textContent = msl20n.ctx.getSync(options.id);
-                        element.classList.remove('hidden');
-                    });
-
-                    // 注册全局locale切换响应事件
-                    //todo
-                }
-                // vm.$remove = function() { //清空构成UI的所有节点，最好定义此方法，让框架对它进行自动化销毁
-                //     }
-                //其他属性与方法
-            vm.changeLocaleLocal = function(newLocale) {
-                msl20n.previousLocale = msl20n.currentLocale;
-                msl20n.currentLocale = newLocale;
-
-                if (msl20n.currentLocale !== previousLocale) {
-                    // localStorage.setItem(uiL20nServiceThis.localeStorageKey, locale);
-                    msl20n.ctx.requestLocales(msl20n.currentLocale);
-                }
+        l20nModel = {
+            $init: function() {
+                msl20n.ctx.addEventListener('ready', function() {
+                    // 问题：id 如果是 avalon vm 变量，未被求值，仍然是 {{xxx}}，期望id能支持变量和过滤器
+                    element.textContent = msl20n.ctx.getSync(options.id);
+                    element.classList.remove('hidden');
+                });
+                // $element.bind('reday', function() {
+                //     element.textContent = msl20n.ctx.getSync(options.id);
+                //     element.classList.remove('hidden');
+                // })
+                avalon.scan(element, vmodels)
             }
-            vm.changeLocaleGlobal = function(newLocale) {
-                msl20n.previousLocale = msl20n.currentLocale;
-                msl20n.currentLocale = newLocale;
+        }
+        l20nModel.$init()
 
-                if (msl20n.currentLocale !== previousLocale) {
-                    // localStorage.setItem(uiL20nServiceThis.localeStorageKey, locale);
+        // var vmodel = avalon.define(data.l20nId, function(vm) {
+        //     avalon.mix(vm, options) //这视情况使用浅拷贝或深拷贝avalon.mix(true, vm, options)
+        //     vm.$init = function() { //初始化组件的界面，最好定义此方法，让框架对它进行自动化配置
+        //             avalon(element).addClass("ui-widget ui-widget-content ui-corner-all")
 
-                    msl20n.ctx.requestLocales(msl20n.currentLocale);
+        //             // ★★★设置动态模板，注意模块上所有占位符都以“MS_OPTION_XXX”形式实现
+        //             // msl20n.ctx.localize([options.id], function(l10n) {
+        //             //     element.textContent = l10n.entities[options.id].value;
+        //             //     element.classList.remove('hidden');
+        //             // });
+        //             msl20n.ctx.addEventListener('ready', function() {
+        //                 // 问题：id 如果是 avalon vm 变量，未被求值，仍然是 {{xxx}}，期望id能支持变量和过滤器
+        //                 element.textContent = msl20n.ctx.getSync(options.id);
+        //                 element.classList.remove('hidden');
+        //             });
 
-                }
+        //             // 注册全局locale切换响应事件
+        //             //todo
+        //         }
+        //         // vm.$remove = function() { //清空构成UI的所有节点，最好定义此方法，让框架对它进行自动化销毁
+        //         //     }
+        //         //其他属性与方法
+        //     vm.changeLocaleLocal = function(newLocale) {
+        //         msl20n.previousLocale = msl20n.currentLocale;
+        //         msl20n.currentLocale = newLocale;
 
-            }
+        //         if (msl20n.currentLocale !== previousLocale) {
+        //             // localStorage.setItem(uiL20nServiceThis.localeStorageKey, locale);
+        //             msl20n.ctx.requestLocales(msl20n.currentLocale);
+        //         }
+        //     }
+        //     vm.changeLocaleGlobal = function(newLocale) {
+        //         msl20n.previousLocale = msl20n.currentLocale;
+        //         msl20n.currentLocale = newLocale;
+
+        //         if (msl20n.currentLocale !== previousLocale) {
+        //             // localStorage.setItem(uiL20nServiceThis.localeStorageKey, locale);
+
+        //             msl20n.ctx.requestLocales(msl20n.currentLocale);
+
+        //         }
+
+        //     }
 
 
-        })
-        return vmodel //必须返回组件VM
+        // })
+        return l20nModel //必须返回组件VM
     }
-
+    widget.version = '1.0.4' // 对应 l20n 版本号
     widget.defaults = { //默认配置项
         id: "", // 国际化节点id,必须设置,在ms-widget元素属性中设置
         // ctxid: "", // 可以不设置，默认是 document.location.host, 在所属vm的options对象中设置
-        // initlocale: navigator.language || navigator.browserLanguage, //页面初始打开时默认语言，未设置则为浏览器当前语言，在所属vm的options对象中设置
+        // initLocale: navigator.language || navigator.browserLanguage, //页面初始打开时默认语言，未设置则为浏览器当前语言，在所属vm的options对象中设置
         // manifestResource: "", //加载国际化资源文件，必须设置， 在所属vm的options对象中设置
     }
 
     // vm.availableLocales = []
     avalon.requestLocales = function(l20nOpt) {
-        var msl20n = singletonCtxs.getInstance(l20nOpt.ctxid, l20nOpt.initlocale, l20nOpt.manifestResource)
-        if (l20nOpt.initlocale === undefined) {
-            msl20n.ctx.requestLocales()
-        } else {
-            msl20n.ctx.requestLocales(l20nOpt.initlocale)
+        if (avalon.type(l20nOpt) === 'string') {
+            avalon.each(singletonCtxs.ctxArray, function(ctxid, msl20n) {
+                setLocale(msl20n, {
+                    initLocale: l20nOpt
+                })
+            })
+        }
 
+        if (l20nOpt.ctxid === undefined) {
+            avalon.each(singletonCtxs.ctxArray, function(ctxid, msl20n) {
+                setLocale(msl20n, l20nOpt)
+            })
+        } else {
+            var msl20n = singletonCtxs.getInstance(l20nOpt.ctxid, l20nOpt.initLocale, l20nOpt.manifestResource)
+            setLocale(msl20n, l20nOpt)
+        }
+
+        function setLocale(msl20n, l20nOpt) {
+            if (l20nOpt.initLocale === undefined) {
+                msl20n.ctx.requestLocales()
+            } else {
+                msl20n.previousLocale = msl20n.currentLocale;
+
+                if (l20nOpt.initLocale !== msl20n.previousLocale) {
+                    msl20n.ctx.requestLocales(msl20n.currentLocale);
+                    msl20n.currentLocale = l20nOpt.initLocale;
+                }
+            }
         }
     };
 
@@ -185,7 +227,7 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
     };
 
     avalon.currentLocale = function(ctxid) {
-        var ctx = singleton.getInstance(ctxid)
+        var ctx = singletonCtxs.getInstance(ctxid)
         return ctx.currentLocale;
     }
 
