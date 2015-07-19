@@ -1,10 +1,10 @@
 {
     "locales": [
+        "zh-CN",
         "en-US",
-        "pl",
-        "zh-CN"
+        "pl"
     ],
-    "default_locale": "en-US",
+    "default_locale": "zh-CN",
     "resources": [
         "./{{locale}}.l20n"
     ]
