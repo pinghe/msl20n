@@ -6,7 +6,8 @@
  *  @updatetime 2015-07-12
  */
 define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Intl, io, avalon) {
-
+    'use strict';
+    
     var singletonCtxs = (function() {
         // {id1: {ctx: ctx1, currentLocale: <currentLocale>, previousLocale: <previousLocale>, manifestResource: <manifestResource>}, id2: {ctx: ctx2, currentLocale: <currentLocale>, , previousLocale: <previousLocale>, manifestResource: <manifestResource>}}
         var ctxArray = {};
