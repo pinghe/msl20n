@@ -112,9 +112,14 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
 
         l20nModel = {
             $init: function() {
-                msl20n.ctx.addEventListener('ready', function() {
-                    // 问题：id 如果是 avalon vm 变量，未被求值，仍然是 {{xxx}}，期望id能支持变量和过滤器
-                    element.textContent = msl20n.ctx.getSync(options.id);
+                // msl20n.ctx.addEventListener('ready', function() {
+                //     // 问题：id 如果是 avalon vm 变量，未被求值，仍然是 {{xxx}}，期望id能支持变量和过滤器
+                //     element.textContent = msl20n.ctx.getSync(options.id);
+                //     element.classList.remove('hidden');
+                // });
+
+                msl20n.ctx.localize([options.id], function(l10n) {
+                    element.textContent = l10n.entities[options.id].value;
                     element.classList.remove('hidden');
                 });
                 // $element.bind('reday', function() {
@@ -190,9 +195,7 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
                     initLocale: l20nOpt
                 })
             })
-        }
-
-        if (l20nOpt.ctxid === undefined) {
+        } else if (l20nOpt.ctxid === undefined) {
             avalon.each(singletonCtxs.ctxArray, function(ctxid, msl20n) {
                 setLocale(msl20n, l20nOpt)
             })
@@ -208,7 +211,7 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
                 msl20n.previousLocale = msl20n.currentLocale;
 
                 if (l20nOpt.initLocale !== msl20n.previousLocale) {
-                    msl20n.ctx.requestLocales(msl20n.currentLocale);
+                    msl20n.ctx.requestLocales(l20nOpt.initLocale);
                     msl20n.currentLocale = l20nOpt.initLocale;
                 }
             }
