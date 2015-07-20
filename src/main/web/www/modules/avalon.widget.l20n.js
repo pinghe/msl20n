@@ -101,6 +101,7 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
         return dirs.join('/');
     }
 
+
     var widget = avalon.ui.l20n = function(element, data, vmodels) {
         var options = data.l20nOptions, //★★★取得配置项
             $element = avalon(element),
@@ -108,81 +109,38 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
             msl20n;
 
 
+
         msl20n = singletonCtxs.getInstance(options.ctxid, options.initLocale, options.manifestResource);
 
+        // function localizeCurrentNode() {
+        //     // l20n cant handle localization of comment nodes, throwing an error in the process.
+        //     // Do not pass comment nodes to l20n for localization.
+        //     if (element[0].nodeType === Node.COMMENT_NODE) {
+        //         return;
+        //     }
+        //     msl20n.ctx.localizeNode(element);
+        // }
+
+        // 因国际化标签很多，每个element对应一个 vm 不合适，这里不创建 vmodel
         l20nModel = {
             $init: function() {
-                // msl20n.ctx.addEventListener('ready', function() {
-                //     // 问题：id 如果是 avalon vm 变量，未被求值，仍然是 {{xxx}}，期望id能支持变量和过滤器
-                //     element.textContent = msl20n.ctx.getSync(options.id);
-                //     element.classList.remove('hidden');
-                // });
+                // document.addEventListener('uiL20n:dataupdated', localizeCurrentNode);
 
+                avalon.scan(element, vmodels)
                 msl20n.ctx.localize([options.id], function(l10n) {
+                    //todo 检测 options.id 是 {{}} 和过滤器，则提取值填充，
                     element.textContent = l10n.entities[options.id].value;
                     element.classList.remove('hidden');
                 });
-                // $element.bind('reday', function() {
-                //     element.textContent = msl20n.ctx.getSync(options.id);
-                //     element.classList.remove('hidden');
-                // })
-                avalon.scan(element, vmodels)
             }
         }
         l20nModel.$init()
-
-        // var vmodel = avalon.define(data.l20nId, function(vm) {
-        //     avalon.mix(vm, options) //这视情况使用浅拷贝或深拷贝avalon.mix(true, vm, options)
-        //     vm.$init = function() { //初始化组件的界面，最好定义此方法，让框架对它进行自动化配置
-        //             avalon(element).addClass("ui-widget ui-widget-content ui-corner-all")
-
-        //             // ★★★设置动态模板，注意模块上所有占位符都以“MS_OPTION_XXX”形式实现
-        //             // msl20n.ctx.localize([options.id], function(l10n) {
-        //             //     element.textContent = l10n.entities[options.id].value;
-        //             //     element.classList.remove('hidden');
-        //             // });
-        //             msl20n.ctx.addEventListener('ready', function() {
-        //                 // 问题：id 如果是 avalon vm 变量，未被求值，仍然是 {{xxx}}，期望id能支持变量和过滤器
-        //                 element.textContent = msl20n.ctx.getSync(options.id);
-        //                 element.classList.remove('hidden');
-        //             });
-
-        //             // 注册全局locale切换响应事件
-        //             //todo
-        //         }
-        //         // vm.$remove = function() { //清空构成UI的所有节点，最好定义此方法，让框架对它进行自动化销毁
-        //         //     }
-        //         //其他属性与方法
-        //     vm.changeLocaleLocal = function(newLocale) {
-        //         msl20n.previousLocale = msl20n.currentLocale;
-        //         msl20n.currentLocale = newLocale;
-
-        //         if (msl20n.currentLocale !== previousLocale) {
-        //             // localStorage.setItem(uiL20nServiceThis.localeStorageKey, locale);
-        //             msl20n.ctx.requestLocales(msl20n.currentLocale);
-        //         }
-        //     }
-        //     vm.changeLocaleGlobal = function(newLocale) {
-        //         msl20n.previousLocale = msl20n.currentLocale;
-        //         msl20n.currentLocale = newLocale;
-
-        //         if (msl20n.currentLocale !== previousLocale) {
-        //             // localStorage.setItem(uiL20nServiceThis.localeStorageKey, locale);
-
-        //             msl20n.ctx.requestLocales(msl20n.currentLocale);
-
-        //         }
-
-        //     }
-
-
-        // })
-        return l20nModel //必须返回组件VM
     }
     widget.version = '1.0.4' // 对应 l20n 版本号
     widget.defaults = { //默认配置项
-        id: "", // 国际化节点id,必须设置,在ms-widget元素属性中设置
-        // ctxid: "", // 可以不设置，默认是 document.location.host, 在所属vm的options对象中设置
+        id: "", // 国际化节点id,必须设置,在ms-widget元素属性中设置。
+        // global: false, //默认false，id 属于定义vm区域，true 全局，属于 ctxid = document.location.host
+        // ctxid: "", // 可以不设置，默认是 document.location.host, 在所属vm的options对象中设置。应该不暴露出来，默认等于opt定义所在vm的id，如果设置了global，默认是 document.location.host
         // initLocale: navigator.language || navigator.browserLanguage, //页面初始打开时默认语言，未设置则为浏览器当前语言，在所属vm的options对象中设置
         // manifestResource: "", //加载国际化资源文件，必须设置， 在所属vm的options对象中设置
     }

@@ -24,7 +24,12 @@ define(['msl20n'], function(avalon) {
         // $scope.$watch('data.objectsNum', function(newValue) {
         // avalon.updatedata(parseInt(newValue, 10) || 0);
         // });
-    // avalon.requestLocales(vmmodel.l20n);
+        // avalon.requestLocales(vmmodel.l20n);
+    vmmodel.data.$watch('objectsNum', function(newValue, oldValue) {
+        avalon.updateL20nData({
+            objectsNum: newValue
+        })
+    })
     avalon.scan();
 
     avalon.log("加载avalon完毕，开始构建根VM与加载其他模块");
