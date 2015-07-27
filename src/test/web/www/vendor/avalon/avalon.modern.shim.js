@@ -5,7 +5,7 @@
  http://weibo.com/jslouvre/
  
  Released under the MIT license
- avalon.modern.shim.js(无加载器版本) 1.45 built in 2015.7.24
+ avalon.modern.shim.js(无加载器版本) 1.45 built in 2015.7.27
  support IE10+ and other browsers
  ==================================================*/
 (function(global, factory) {
@@ -3537,17 +3537,12 @@ bindingExecutors.repeat = function (method, pos, el) {
                     proxies.splice(i, 0, proxy)
                     shimController(data, transation, proxy, fragments)
                 }
-                var now = new Date() - 0
-                avalon.optimize = avalon.optimize || now
+                parent.insertBefore(transation, comments[pos] || end)
                 for (i = 0; fragment = fragments[i++]; ) {
                     scanNodeArray(fragment.nodes, fragment.vmodels)
                     fragment.nodes = fragment.vmodels = null
                 }
-                if (avalon.optimize === now) {
-                    avalon.optimize = null
-                }
-                parent.insertBefore(transation, comments[pos] || end)
-                avalon.profile("插入操作花费了 " + (new Date - now))
+
                 break
             case "del": //将pos后的el个元素删掉(pos, el都是数字)
                 sweepNodes(comments[pos], comments[pos + el] || end)
@@ -3613,7 +3608,7 @@ bindingExecutors.repeat = function (method, pos, el) {
                         parseExprProxy(data.value, data.vmodels, data, 0, 1)
                     }
                     object = data.$repeat = data.evaluator.apply(0, data.args || [])
-                    object.$proxy = oldProxy 
+                    object.$proxy = oldProxy
                 }
                 var pool = object.$proxy || {}
                 removed = []
@@ -3633,7 +3628,7 @@ bindingExecutors.repeat = function (method, pos, el) {
                 var indexNode = [], item
                 var keyIndex = data.keyIndex || (data.keyIndex = {})
                 //将现有的节点全部移出DOM树
-                for ( i = 0; i < removed.length; i++) {
+                for (i = 0; i < removed.length; i++) {
                     el = removed[i]
                     if (el.nodeValue === data.signature) {
                         item = avalonFragment.cloneNode(false)
@@ -3657,7 +3652,7 @@ bindingExecutors.repeat = function (method, pos, el) {
                     }
                 }
 
-                for ( key in pool) {
+                for (key in pool) {
                     if (keys.indexOf(key) === -1) {//删除没用的代理VM
                         proxyRecycler(pool[key], withProxyPool) //去掉之前的代理VM
                         delete pool[key]
@@ -3686,18 +3681,14 @@ bindingExecutors.repeat = function (method, pos, el) {
                 for (i = 0; i < renderKeys.length; i++) {
                     keyIndex[renderKeys[i]] = i
                 }
-
+                parent.insertBefore(transation, end)
                 for (i = 0; fragment = fragments[i++]; ) {
                     if (fragment.nodes) {
                         scanNodeArray(fragment.nodes, fragment.vmodels)
                         fragment.nodes = fragment.vmodels = null
                     }
                 }
-                if (avalon.optimize === now) {
-                    avalon.optimize = null
-                }
-                parent.insertBefore(transation, end)
-                avalon.profile("插入操作花费了 " + (new Date - now))
+
                 break
         }
         if (!data.$repeat || data.$repeat.hasOwnProperty("$lock")) //IE6-8 VBScript对象会报错, 有时候data.$repeat不存在
@@ -3732,10 +3723,10 @@ function shimController(data, transation, proxy, fragments) {
 function getComments(data) {
     var ret = []
     var nodes = data.element.parentNode.childNodes
-    for(var i= 0, node; node = nodes[i++];){
-        if(node.nodeValue === data.signature){
-            ret.push( node )
-        }else if(node.nodeValue === data.signature+":end"){
+    for (var i = 0, node; node = nodes[i++]; ) {
+        if (node.nodeValue === data.signature) {
+            ret.push(node)
+        } else if (node.nodeValue === data.signature + ":end") {
             break
         }
     }
@@ -3930,18 +3921,19 @@ function parseDisplay(nodeName, val) {
 
 avalon.parseDisplay = parseDisplay
 
-bindingHandlers.visible = function(data, vmodels) {
-    var elem = data.element
-    var display = elem.style.display
-    if(display === "none"){
-        display = parseDisplay(elem.nodeName)
-    }
-    data.display = display
+bindingHandlers.visible = function (data, vmodels) {
     parseExprProxy(data.value, vmodels, data)
 }
 
-bindingExecutors.visible = function(val, elem, data) {
-    elem.style.display = val ? data.display : "none"
+bindingExecutors.visible = function (val, elem, binding) {
+    if (val) {
+        elem.style.display = binding.display || ""
+        if (avalon(elem).css("display") === "none") {
+            elem.style.display = binding.display = parseDisplay(elem.nodeName)
+        }
+    } else {
+        elem.style.display = "none"
+    }
 }
 bindingHandlers.widget = function(data, vmodels) {
     var args = data.value.match(rword)
