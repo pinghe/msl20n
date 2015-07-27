@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html class="no-js" ms-controller="mainctrl">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Test ms-l20n app</title>
+    <script src="vendor/require/require.min.js" data-main="mainrequiredirective.js"></script>
+    <style>
+    .ms-controller,
+    .ms-important {
+        visibility: hidden;
+    }
+    
+    div {
+        margin: 20px 0;
+    }
+    
+    div[ms-l20n="overlayed"] > strong::after {
+        content: attr(data-result);
+    }
+    </style>
+</head>
+
+<body>
+    <!-- <p ms-visible="currentLocale == 'pl'">====</p> -->
+    <button ms-click="changeLocale('en-US')">en-US</button>
+    <button ms-click="changeLocale('pl')">pl</button>
+    <button ms-click="changeLocale('zh-CN')">zh-CN</button>
+
+    <p ms-l20n="testp">123</p>
+    <p ms-l20n="{{l20nI18nId}}">=={{l20nI18nId}}==</p>
+    <input type="number" ms-duplex="data.objectsNum">
+    <div>
+        <a href="#" ms-visible="currentLocale != 'pl'" ms-click="changeLocale('pl')">Wersja polska</a>
+        <a href="#" ms-visible="currentLocale != 'zh-CN'" ms-click="changeLocale('zh-CN')">中文版本</a>
+        <a href="#" ms-visible="currentLocale != 'en-US'" ms-click="changeLocale('en-US')">English version</a>
+    </div>
+    <div ms-l20n="overlayed">
+        <strong data-result=" (Attribute: {{data.testNumber}}) "></strong>
+        <input type="number" ms-duplex="data.testNumber">
+    </div>
+</body>
+
+</html>

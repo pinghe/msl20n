@@ -5,16 +5,20 @@
  *    <p></p>
  *  @updatetime 2015-07-12
  */
-define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Intl, io, avalon) {
+define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Intl, io, avalon) {
     'use strict';
-    
+
+    var rproxy = /(\$proxy\$[a-z]+)\d+$/
+    var rstringLiteral = /(['"])(\\\1|.)+?\1/g
+    var r11a = /\|\|/g
+
     var singletonCtxs = (function() {
         // {id1: {ctx: ctx1, currentLocale: <currentLocale>, previousLocale: <previousLocale>, manifestResource: <manifestResource>}, id2: {ctx: ctx2, currentLocale: <currentLocale>, , previousLocale: <previousLocale>, manifestResource: <manifestResource>}}
         var ctxArray = {};
 
         function init(ctxid, initLocale, manifestResource) {
             ctxArray[ctxid] = {};
-            ctxArray[ctxid].ctx = MSL20n.getContext(ctxid);
+            ctxArray[ctxid].ctx = mzl20n.getContext(ctxid);
             initparam(ctxid, initLocale, manifestResource);
             return ctxArray[ctxid];
         }
@@ -102,49 +106,132 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(MSL20n, Int
         return dirs.join('/');
     }
 
-
-    var widget = avalon.ui.l20n = function(element, data, vmodels) {
-        var options = data.l20nOptions, //★★★取得配置项
-            $element = avalon(element),
-            l20nModel,
-            msl20n;
-
-
-
-        msl20n = singletonCtxs.getInstance(options.ctxid, options.initLocale, options.manifestResource);
-
-        // function localizeCurrentNode() {
-        //     // l20n cant handle localization of comment nodes, throwing an error in the process.
-        //     // Do not pass comment nodes to l20n for localization.
-        //     if (element[0].nodeType === Node.COMMENT_NODE) {
-        //         return;
-        //     }
-        //     msl20n.ctx.localizeNode(element);
-        // }
-
-        // 因国际化标签很多，每个element对应一个 vm 不合适，这里不创建 vmodel
-        l20nModel = {
-            $init: function() {
-                // document.addEventListener('uiL20n:dataupdated', localizeCurrentNode);
-
-                avalon.scan(element, vmodels)
-                msl20n.ctx.localize([options.id], function(l10n) {
-                    //todo 检测 options.id 是 {{}} 和过滤器，则提取值填充，
-                    element.textContent = l10n.entities[options.id].value;
-                    element.classList.remove('hidden');
-                });
+    function getToken(value) {
+        if (value.indexOf("|") > 0) {
+            var scapegoat = value.replace(rstringLiteral, function(_) {
+                return Array(_.length + 1).join("1") // jshint ignore:line
+            })
+            var index = scapegoat.replace(r11a, "\u1122\u3344").indexOf("|") //干掉所有短路或
+            if (index > -1) {
+                return {
+                    filters: value.slice(index),
+                    value: value.slice(0, index),
+                    expr: true
+                }
             }
         }
-        l20nModel.$init()
+        return {
+            value: value,
+            filters: "",
+            expr: true
+        }
     }
-    widget.version = '1.0.4' // 对应 l20n 版本号
-    widget.defaults = { //默认配置项
-        id: "", // 国际化节点id,必须设置,在ms-widget元素属性中设置。
-        // global: false, //默认false，id 属于定义vm区域，true 全局，属于 ctxid = document.location.host
-        // ctxid: "", // 可以不设置，默认是 document.location.host, 在所属vm的options对象中设置。应该不暴露出来，默认等于opt定义所在vm的id，如果设置了global，默认是 document.location.host
-        // initLocale: navigator.language || navigator.browserLanguage, //页面初始打开时默认语言，未设置则为浏览器当前语言，在所属vm的options对象中设置
-        // manifestResource: "", //加载国际化资源文件，必须设置， 在所属vm的options对象中设置
+
+    function scanExpr(str) {
+        var tokens = [],
+            openTag = '{{',
+            closeTag = '}}',
+            value, start = 0,
+            stop
+        do {
+            stop = str.indexOf(openTag, start)
+            if (stop === -1) {
+                break
+            }
+            value = str.slice(start, stop)
+            if (value) { // {{ 左边的文本
+                tokens.push({
+                    value: value,
+                    filters: "",
+                    expr: false
+                })
+            }
+            start = stop + openTag.length
+            stop = str.indexOf(closeTag, start)
+            if (stop === -1) {
+                break
+            }
+            value = str.slice(start, stop)
+            if (value) { //处理{{ }}插值表达式
+                tokens.push(getToken(value, start))
+            }
+            start = stop + closeTag.length
+        } while (1)
+        value = str.slice(start)
+        if (value) { //}} 右边的文本
+            tokens.push({
+                value: value,
+                expr: false,
+                filters: ""
+            })
+        }
+        return tokens
     }
+
+    avalon.bindingHandlers.l20n = function(data, vmodels) {
+        var el = data.element,
+            msl20n, options, ctxid;
+        vmodels.map(function(el) {
+            if (el.$model.l20n) {
+                ctxid = String(el.$id).replace(rproxy, "$1")
+                options = el.$model.l20n
+
+            }
+            return el.$id
+        })
+
+        if (ctxid) {
+            msl20n = singletonCtxs.getInstance(ctxid, options.initLocale, options.manifestResource);
+            data.msl20n = msl20n;
+            var l20nid = data.value;
+            if (l20nid) {
+                //debugger;
+                var code;
+                avalon.parseExprProxy(code, vmodels, data, scanExpr(l20nid));
+
+                return;
+            }
+
+
+        }
+    };
+
+    // avalon 会在表达式计算的结果变化时（也可以认为是 View Model 里的属性产生变化时），触发此回调
+    // val:也就是计算后的 css
+    avalon.bindingExecutors.l20n = function(val, elem, data, vmodel) {
+        console.log(data)
+        if (data.oldVal === val) {
+            return
+        } else {
+            data.oldVal = val
+            data.msl20n.ctx.localize([val], function(l10n) {
+                //todo 检测 options.id 是 {{}} 和过滤器，则提取值填充，
+                elem.textContent = l10n.entities[val].value;
+                elem.classList.remove('hidden');
+            });
+        }
+        // if (data.oldVal == val) {
+        //     return;
+        // }
+        // data.oldVa = val;
+        // var styleElement = data.styleElement;
+        // if (ie) {
+        //     //setTimeout(function () {
+        //     styleElement.cssText = val;
+        //     //}, 0);
+        // } else {
+        //     //setTimeout(function () {
+        //     styleElement.textContent = val;
+        //     //}, 0);
+        // }
+        // var onchange = elem.onchange;
+        // if (onchange)
+        //     onchange.apply(elem, [val]);
+    };
+
+
+    avalon.l20nversion = '1.0.4' // 对应 l20n 版本号
+
 
     // vm.availableLocales = []
     avalon.requestLocales = function(l20nOpt) {
