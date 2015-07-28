@@ -5,9 +5,9 @@
 }>
 
 <objectsWithCount[plural($objectsNum)] {
-    zero: "no objects",
-    one: "1 object",
-    many: "{{ $objectsNum }} objects",
+    zero: "{{setObjectsNumber}} no objects",
+    one: "{{setObjectsNumber}} 1 object",
+    many: "{{setObjectsNumber}} {{ $objectsNum }} objects",
 }>
 
 <setObjectsNumber "Set objects number">

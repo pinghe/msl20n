@@ -8,8 +8,8 @@
 <objectsWithCount[plural($objectsNum)] {
     zero: "brak obiektów",
     one: "jeden obiekt",
-    few: "{{ $objectsNum }} obiekty",
-    many: "{{ $objectsNum }} obiektów",
+    few: "obiekty",
+    many: "obiektów",
 }>
 
 <setObjectsNumber "Ustaw liczbę obiektów">

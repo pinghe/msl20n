@@ -3,33 +3,24 @@ define(['msl20n'], function(avalon) {
 
 
     var vmmodel = avalon.define({
-            $id: "mainctrl",
-            $skipArray: ["l20n"],
-            data: {
-                testNumber: 4,
-                objectsNum: 3,
-            },
-            currentLocale: 'pl',
-            changeLocale: function(newLocale) {
-                vmmodel.currentLocale = newLocale;
-                avalon.requestLocales(newLocale);
-            },
-            l20nI18nId: "objectsWithCount",
-            l20n: {
-                ctxid: "test", // 可以不设置，默认是 document.location.host
-                initLocale: 'pl', //页面初始打开时默认语言，未设置则为浏览器当前语言
-                manifestResource: "modules/locales/l20n.json", //加载国际化资源文件，必须设置
-            },
-        })
-        // $scope.$watch('data.objectsNum', function(newValue) {
-        // avalon.updatedata(parseInt(newValue, 10) || 0);
-        // });
-        // avalon.requestLocales(vmmodel.l20n);
-    vmmodel.data.$watch('objectsNum', function(newValue, oldValue) {
-        avalon.updateL20nData({
-            objectsNum: newValue
-        })
+        $id: "mainctrl",
+        $skipArray: ["l20n"],
+        data: {
+            testNumber: 4,
+            objectsNum: 3,
+        },
+        currentLocale: 'en-US',
+        changeLocale: function(newLocale) {
+            vmmodel.currentLocale = newLocale;
+            avalon.changeLocale(newLocale, vmmodel.$id);
+        },
+        l20nI18nId: "objectsWithCount",
+        l20n: {
+            initLocale: 'en-US', //页面初始打开时默认语言，未设置则为浏览器当前语言
+            manifestResource: "modules/locales/l20n.json", //加载国际化资源文件，必须设置
+        },
     })
+
     avalon.scan();
 
     avalon.log("加载avalon完毕，开始构建根VM与加载其他模块");

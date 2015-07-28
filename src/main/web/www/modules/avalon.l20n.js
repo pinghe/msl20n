@@ -12,32 +12,215 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
     var rstringLiteral = /(['"])(\\\1|.)+?\1/g
     var r11a = /\|\|/g
 
+    mzl20n.shims = {};
+
+    var templateSupported = 'content' in document.createElement('template');
+
+
     var singletonCtxs = (function() {
         // {id1: {ctx: ctx1, currentLocale: <currentLocale>, previousLocale: <previousLocale>, manifestResource: <manifestResource>}, id2: {ctx: ctx2, currentLocale: <currentLocale>, , previousLocale: <previousLocale>, manifestResource: <manifestResource>}}
         var ctxArray = {};
 
         function init(ctxid, initLocale, manifestResource) {
             ctxArray[ctxid] = {};
-            ctxArray[ctxid].ctx = mzl20n.getContext(ctxid);
+            var mzl20nctx = mzl20n.getContext(ctxid)
+            ctxArray[ctxid].ctx = mzl20nctx;
+            mzl20nctx.localizeNode = function localizeNode(l20nid, node) {
+                var localizeHandler = mzl20nctx.localize([l20nid], function localizeHandler(l10n) {
+                    translateNode(node, l20nid, l10n.entities[l20nid]);
+                });
+                // var many = localizeHandler.extend([l20nid]);
+                // translateNode(node, l20nid, many.entities[l20nid]);
+            };
             initparam(ctxid, initLocale, manifestResource);
             return ctxArray[ctxid];
         }
 
+
+
         function initparam(ctxid, initLocale, manifestResource) {
             ctxArray[ctxid].currentLocale = initLocale || navigator.language || navigator.browserLanguage
-            if (manifestResource !== undefined) {
-                ctxArray[ctxid].manifestResource = manifestResource
-                loadManifest(ctxArray[ctxid])
-            };
-
+            ctxArray[ctxid].manifestResource = manifestResource || 'locales/l20n.json'
+            loadManifest(ctxArray[ctxid])
         }
+
+        function camelCaseToDashed(string) {
+            return string
+                .replace(/[A-Z]/g, function(match) {
+                    return '-' + match.toLowerCase();
+                })
+                .replace(/^-/, '');
+        }
+
+        // The goal of overlayElement is to move the children of `translationElement` 
+        // into `sourceElement` such that `sourceElement`'s own children are not 
+        // replaced, but onle have their text nodes and their attributes modified.
+        //
+        // We want to make it possible for localizers to apply text-level semantics to
+        // the translations and make use of HTML entities.  At the same time, we 
+        // don't trust translations so we need to filter unsafe elements and 
+        // attribtues out and we don't want to break the Web by replacing elements to 
+        // which third-party code might have created references (e.g. two-way 
+        // bindings in MVC frameworks).
+        function overlayElement(sourceElement, translationElement) {
+            var result = document.createDocumentFragment();
+
+            // take one node from translationElement at a time and check it against the 
+            // whitelist or try to match it with a corresponding element in the source
+            var childElement;
+            while (childElement = translationElement.childNodes[0]) {
+                translationElement.removeChild(childElement);
+
+                if (childElement.nodeType === Node.TEXT_NODE) {
+                    result.appendChild(childElement);
+                    continue;
+                }
+
+                var sourceChild = getElementOfType(sourceElement, childElement);
+                if (sourceChild) {
+                    // there is a corresponding element in the source, let's use it
+                    overlayElement(sourceChild, childElement);
+                    result.appendChild(sourceChild);
+                    continue;
+                }
+
+                if (isElementAllowed(childElement)) {
+                    for (var k = 0, attr; attr = childElement.attributes[k]; k++) {
+                        if (!isAttrAllowed(attr, childElement)) {
+                            childElement.removeAttribute(attr.name);
+                        }
+                    }
+                    result.appendChild(childElement);
+                    continue;
+                }
+
+                // otherwise just take this child's textContent
+                var text = document.createTextNode(childElement.textContent);
+                result.appendChild(text);
+            }
+
+            // clear `sourceElement` and append `result` which by this time contains 
+            // `sourceElement`'s original children, overlayed with translation
+            sourceElement.textContent = '';
+            sourceElement.appendChild(result);
+
+            // if we're overlaying a nested element, translate the whitelisted 
+            // attributes; top-level attributes are handled in `translateNode`
+            // XXX attributes previously set here for another language should be 
+            // cleared if a new language doesn't use them; https://bugzil.la/922577
+            if (translationElement.attributes) {
+                for (var k = 0, attr; attr = translationElement.attributes[k]; k++) {
+                    if (isAttrAllowed(attr, sourceElement)) {
+                        sourceElement.setAttribute(attr.name, attr.value);
+                    }
+                }
+            }
+        }
+
+        // ideally, we'd use querySelector(':scope > ELEMENT:nth-of-type(index)'),
+        // but 1) :scope is not widely supported yet and 2) it doesn't work with 
+        // DocumentFragments.  :scope is needed to query only immediate children
+        // https://developer.mozilla.org/en-US/docs/Web/CSS/:scope
+        function getElementOfType(context, element) {
+            var index = getIndexOfType(element);
+            var nthOfType = 0;
+            for (var i = 0, child; child = context.children[i]; i++) {
+                if (child.nodeType === Node.ELEMENT_NODE &&
+                    child.tagName === element.tagName) {
+                    if (nthOfType === index) {
+                        return child;
+                    }
+                    nthOfType++;
+                }
+            }
+            return null;
+        }
+
+        function getIndexOfType(element) {
+            var index = 0;
+            var child;
+            while (child = element.previousElementSibling) {
+                if (child.tagName === element.tagName) {
+                    index++;
+                }
+            }
+            return index;
+        }
+
+        // XXX the whitelist should be amendable; https://bugzil.la/922573
+        function isElementAllowed(element) {
+            return whitelist.elements.indexOf(element.tagName.toLowerCase()) !== -1;
+        }
+
+        function isAttrAllowed(attr, element) {
+            var attrName = attr.name.toLowerCase();
+            var tagName = element.tagName.toLowerCase();
+            // is it a globally safe attribute?
+            if (whitelist.attributes.global.indexOf(attrName) !== -1) {
+                return true;
+            }
+            // are there no whitelisted attributes for this element?
+            if (!whitelist.attributes[tagName]) {
+                return false;
+            }
+            // is it allowed on this element?
+            // XXX the whitelist should be amendable; https://bugzil.la/922573
+            if (whitelist.attributes[tagName].indexOf(attrName) !== -1) {
+                return true;
+            }
+            // special case for value on inputs with type button, reset, submit
+            if (tagName === 'input' && attrName === 'value') {
+                var type = element.type.toLowerCase();
+                if (type === 'submit' || type === 'button' || type === 'reset') {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function translateNode(node, id, entity) {
+            if (!entity) {
+                return;
+            }
+            if (entity.value) {
+                // if there is no HTML in the translation nor no HTML entities are used
+                // or if the template element is not supported and no fallback was
+                // provided, just replace the textContent
+                if (entity.value.indexOf('<') === -1 &&
+                    entity.value.indexOf('&') === -1 ||
+                    !templateSupported && typeof mzl20n.shims.getTemplate !== 'function') {
+                    node.textContent = entity.value;
+                } else {
+                    // otherwise, start with an inert template element and move its 
+                    // children into `node` but such that `node`'s own children are not 
+                    // replaced
+                    var translation = templateSupported ?
+                        document.createElement('template') :
+                        // If <template> is not supported, fallback to an implementation
+                        // provided from outside.
+                        L20n.shims.getTemplate();
+
+                    translation.innerHTML = entity.value;
+                    // overlay the node with the DocumentFragment
+                    overlayElement(node, translation.content);
+                }
+            }
+            Object.keys(entity.attributes).forEach(function(key) {
+                var attrName = camelCaseToDashed(key);
+                if (isAttrAllowed({
+                        name: attrName
+                    }, node)) {
+                    node.setAttribute(attrName, entity.attributes[key]);
+                }
+            });
+        }
+
         return {
             ctxArray: ctxArray,
             getInstance: function(ctxid, initLocale, manifestResource) {
                 return ctxArray[ctxid] || init(ctxid, initLocale, manifestResource);
             }
-        }
-    })();
+        }))();
 
     var reAbsolute = /^\/|:/;
     var rtlLocales = ['ar', 'fa', 'he', 'ps', 'ur'];
@@ -168,6 +351,34 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
         return tokens
     }
 
+    function scanObj(str) {
+        var objparam = {
+                key: ""
+            },
+            openTag = '(',
+            closeTag = ')',
+            value, start = 0,
+            stop
+        stop = str.indexOf(openTag, start)
+        if (stop === -1) {
+            objparam.key = str
+            return objparam
+        }
+        value = str.slice(start, stop) // ( 左边的文本, l20n key
+        objparam.key = value
+        if (value) {
+            start = stop + openTag.length
+            stop = str.lastIndexOf(closeTag)
+            if (stop !== -1) {
+                value = str.slice(start, stop).replace(/\'/g, "\"")
+                objparam.param = JSON.parse(value);
+            }
+        }
+
+
+        return objparam
+    }
+
     avalon.bindingHandlers.l20n = function(data, vmodels) {
         var el = data.element,
             msl20n, options, ctxid;
@@ -204,38 +415,55 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
             return
         } else {
             data.oldVal = val
-            data.msl20n.ctx.localize([val], function(l10n) {
-                //todo 检测 options.id 是 {{}} 和过滤器，则提取值填充，
-                elem.textContent = l10n.entities[val].value;
-                elem.classList.remove('hidden');
-            });
+            var objparam = scanObj(val)
+
+            if (objparam.param && typeof objparam.param === 'object') {
+                data.msl20n.ctx.updateData(objparam.param)
+            }
+
+            data.msl20n.ctx.localizeNode(objparam.key, elem)
         }
-        // if (data.oldVal == val) {
-        //     return;
-        // }
-        // data.oldVa = val;
-        // var styleElement = data.styleElement;
-        // if (ie) {
-        //     //setTimeout(function () {
-        //     styleElement.cssText = val;
-        //     //}, 0);
-        // } else {
-        //     //setTimeout(function () {
-        //     styleElement.textContent = val;
-        //     //}, 0);
-        // }
-        // var onchange = elem.onchange;
-        // if (onchange)
-        //     onchange.apply(elem, [val]);
     };
 
 
     avalon.l20nversion = '1.0.4' // 对应 l20n 版本号
 
+    avalon.changeLocale = function(newLocale, ctxidparm) {
+        if (avalon.type(newLocale) === 'string' && ctxidparm === undefined) {
+            avalon.each(singletonCtxs.ctxArray, function(ctxid, msl20n) {
+                setLocale(msl20n, newLocale)
+            })
+        } else if (avalon.type(newLocale) === 'string' && avalon.type(ctxidparm) === 'string') {
+            var msl20n = singletonCtxs.getInstance(ctxidparm)
+            setLocale(msl20n, newLocale)
+
+        }
+
+        function setLocale(msl20n, newLocale) {
+            if (newLocale !== undefined) {
+                msl20n.previousLocale = msl20n.currentLocale;
+
+                if (newLocale !== msl20n.previousLocale) {
+                    msl20n.ctx.requestLocales(newLocale);
+                    msl20n.currentLocale = newLocale;
+                }
+            }
+        }
+    };
 
     // vm.availableLocales = []
-    avalon.requestLocales = function(l20nOpt) {
-        if (avalon.type(l20nOpt) === 'string') {
+    /**
+     *   avalon.requestLocales(vm.$id) // 继续使用当前locale
+     *   avalon.requestLocales(vm.$id, 'en-US') // 在当前vm中使用新locale更新国际化内容
+     *   avalon.requestLocales('en-US') // 在所有vm中使用新locale更新国际化内容
+
+     */
+    avalon.requestLocales = function(ctxid, l20nOpt) {
+        if (avalon.type(ctxid) === 'string' && l20nOpt === undefined) {
+            var msl20n = singletonCtxs.getInstance(ctxid)
+            setLocale(msl20n, l20nOpt)
+
+        } else if (avalon.type(l20nOpt) === 'string') {
             avalon.each(singletonCtxs.ctxArray, function(ctxid, msl20n) {
                 setLocale(msl20n, {
                     initLocale: l20nOpt
@@ -264,35 +492,10 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
         }
     };
 
-    avalon.updateL20nData = function() {
-        // var ctx = singleton(ctxid),
-        //     event;
-
-        // ctx.updateData.apply(msl20n.ctx, arguments);
-
-        // event = document.createEvent('HTMLEvents');
-        // event.initEvent('uiL20n:dataupdated', true, true);
-        // document.dispatchEvent(event);
-    };
-
     avalon.currentLocale = function(ctxid) {
         var ctx = singletonCtxs.getInstance(ctxid)
         return ctx.currentLocale;
     }
 
-    // avalon.changeLocale = function(newLocale) {
-    //     previousLocale = vm.currentLocale;
-    //     vm.currentLocale = newLocale;
-
-    //     if (vm.currentLocale !== previousLocale) {
-    //         // localStorage.setItem(uiL20nServiceThis.localeStorageKey, locale);
-
-    //         ctx.requestLocales(vm.currentLocale);
-
-    //     }
-
-    // }
-
     return avalon
-
 })
