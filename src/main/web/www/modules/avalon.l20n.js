@@ -147,10 +147,10 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
             return index;
         }
 
-        // XXX the whitelist should be amendable; https://bugzil.la/922573
-        function isElementAllowed(element) {
-            return whitelist.elements.indexOf(element.tagName.toLowerCase()) !== -1;
-        }
+        // // XXX the whitelist should be amendable; https://bugzil.la/922573
+        // function isElementAllowed(element) {
+        //     return whitelist.elements.indexOf(element.tagName.toLowerCase()) !== -1
+        // }
 
         function isAttrAllowed(attr, element) {
             var attrName = attr.name.toLowerCase();
@@ -220,7 +220,8 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
             getInstance: function(ctxid, initLocale, manifestResource) {
                 return ctxArray[ctxid] || init(ctxid, initLocale, manifestResource);
             }
-        }))();
+        }
+    })();
 
     var reAbsolute = /^\/|:/;
     var rtlLocales = ['ar', 'fa', 'he', 'ps', 'ur'];
@@ -407,10 +408,8 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
         }
     };
 
-    // avalon 会在表达式计算的结果变化时（也可以认为是 View Model 里的属性产生变化时），触发此回调
-    // val:也就是计算后的 css
     avalon.bindingExecutors.l20n = function(val, elem, data, vmodel) {
-        console.log(data)
+        // console.debug(data)
         if (data.oldVal === val) {
             return
         } else {
@@ -435,8 +434,9 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
             })
         } else if (avalon.type(newLocale) === 'string' && avalon.type(ctxidparm) === 'string') {
             var msl20n = singletonCtxs.getInstance(ctxidparm)
-            setLocale(msl20n, newLocale)
-
+            if (msl20n) {
+                setLocale(msl20n, newLocale)
+            }
         }
 
         function setLocale(msl20n, newLocale) {
@@ -446,10 +446,17 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
                 if (newLocale !== msl20n.previousLocale) {
                     msl20n.ctx.requestLocales(newLocale);
                     msl20n.currentLocale = newLocale;
+                    avalon.vmodels[ctxidparm].currentLocale = newLocale;
                 }
             }
         }
     };
+
+    avalon.currentLocale = function(ctxid) {
+        var ctx = singletonCtxs.getInstance(ctxid)
+        return ctx.currentLocale;
+    }
+
 
     // vm.availableLocales = []
     /**
@@ -492,10 +499,6 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
         }
     };
 
-    avalon.currentLocale = function(ctxid) {
-        var ctx = singletonCtxs.getInstance(ctxid)
-        return ctx.currentLocale;
-    }
 
     return avalon
 })

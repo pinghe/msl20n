@@ -9,9 +9,9 @@ define(['msl20n'], function(avalon) {
             testNumber: 4,
             objectsNum: 3,
         },
-        currentLocale: 'en-US',
+        // currentLocale: 'en-US',
         changeLocale: function(newLocale) {
-            vmmodel.currentLocale = newLocale;
+            // vmmodel.currentLocale = newLocale;
             avalon.changeLocale(newLocale, vmmodel.$id);
         },
         l20nI18nId: "objectsWithCount",
