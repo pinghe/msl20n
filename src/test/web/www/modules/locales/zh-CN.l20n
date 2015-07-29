@@ -15,3 +15,5 @@
 <overlayed "段落测试 <strong>overlaying 节点</strong>. 测试数量: <input>.">
 
 <testp "段落">
+
+<Attribute "属性">

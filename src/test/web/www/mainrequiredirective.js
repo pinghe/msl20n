@@ -6,7 +6,7 @@
 require.config({//第一块，配置
     baseUrl: './modules/',
     paths: {
-        main: '../mainrequire',
+        main: '../mainrequiredirective',
         avalon: "../vendor/avalon/avalon.modern.shim",
         l20n: '../vendor/l20n/l20n',
         // l20n: '../../../../test/web/www/vendor/l20n/l20n',

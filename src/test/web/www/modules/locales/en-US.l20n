@@ -15,3 +15,5 @@
 <overlayed "This paragraph tests <strong>overlaying nodes</strong>. Test number: <input>.">
 
 <testp "paragraph">
+
+<Attribute "Attribute">

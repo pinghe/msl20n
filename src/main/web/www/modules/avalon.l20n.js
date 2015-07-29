@@ -14,6 +14,30 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
 
     mzl20n.shims = {};
 
+    var whitelist = {
+        elements: [
+            'a', 'em', 'strong', 'small', 's', 'cite', 'q', 'dfn', 'abbr', 'data',
+            'time', 'code', 'var', 'samp', 'kbd', 'sub', 'sup', 'i', 'b', 'u',
+            'mark', 'ruby', 'rt', 'rp', 'bdi', 'bdo', 'span', 'br', 'wbr'
+        ],
+        attributes: {
+            global: ['title', 'aria-label'],
+            a: ['download'],
+            area: ['download', 'alt'],
+            // value is special-cased in isAttrAllowed
+            input: ['alt', 'placeholder'],
+            menuitem: ['label'],
+            menu: ['label'],
+            optgroup: ['label'],
+            option: ['label'],
+            track: ['label'],
+            img: ['alt'],
+            textarea: ['placeholder'],
+            th: ['abbr']
+        }
+    };
+
+
     var templateSupported = 'content' in document.createElement('template');
 
 
@@ -148,9 +172,9 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
         }
 
         // // XXX the whitelist should be amendable; https://bugzil.la/922573
-        // function isElementAllowed(element) {
-        //     return whitelist.elements.indexOf(element.tagName.toLowerCase()) !== -1
-        // }
+        function isElementAllowed(element) {
+            return whitelist.elements.indexOf(element.tagName.toLowerCase()) !== -1
+        }
 
         function isAttrAllowed(attr, element) {
             var attrName = attr.name.toLowerCase();
@@ -446,11 +470,51 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
                 if (newLocale !== msl20n.previousLocale) {
                     msl20n.ctx.requestLocales(newLocale);
                     msl20n.currentLocale = newLocale;
-                    avalon.vmodels[ctxidparm].currentLocale = newLocale;
+                    if (avalon.vmodels[ctxidparm].currentLocale !== undefined) {
+                        avalon.vmodels[ctxidparm].$model.currentLocale = newLocale;
+                    }
                 }
             }
         }
-    };
+    }
+
+    avalon.localize = function(ctxid) {
+        if (ctxid === undefined) {
+            avalon.each(avalon.vmodels, function(index, vmodel) {
+                localizeLocal(vmodel.$id)
+            })
+
+        } else {
+            localizeLocal(ctxid)
+        }
+
+        function localizeLocal(ctxid) {
+            var l20nkeys = [],
+                mzl20nctx,
+                stopIndex,
+                key
+            avalon.each(avalon.vmodels[ctxid], function(propname, propvalue) {
+                stopIndex = propname.lastIndexOf('L20nAuto')
+
+                if (avalon.type(propname) === 'string' && stopIndex !== -1) {
+                    key = propname.slice(0, stopIndex)
+                    l20nkeys.push(key)
+                }
+            })
+
+            if (l20nkeys.length !== 0) {
+                mzl20nctx = singletonCtxs.getInstance(ctxid).ctx
+
+                var localizeHandler = mzl20nctx.localize(l20nkeys, function(l10n) {
+                    var l20nvmmodel = avalon.vmodels[ctxid] //.$model
+                    avalon.each(l20nkeys, function(index, l20nid) {
+                        l20nvmmodel[l20nid + "L20nAuto"] = l10n.entities[l20nid].value
+                    })
+                });
+            }
+        }
+    }
+
 
     avalon.currentLocale = function(ctxid) {
         var ctx = singletonCtxs.getInstance(ctxid)
@@ -500,5 +564,8 @@ define(["l20n", "l20n/Intl", "l20n/platform/io", "avalon"], function(mzl20n, Int
     };
 
 
+    avalon.ready(function() {
+        avalon.localize()
+    })
     return avalon
 })

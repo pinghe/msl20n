@@ -22,3 +22,8 @@ l20n 是 mozilla 开发的一个国际化组件，相比其它国际化组件，
   ```
 1. 在整个页面完成后，通过 requestLocales 进行语言切换
 1. ms-widget 设定 data-l20n-id 对应国际化资源文件 key
+
+
+[sdgsdg](http://sdg.com)
+
+[sdgsd](http://sdgdsg "sdgsdg===")

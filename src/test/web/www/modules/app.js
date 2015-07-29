@@ -9,7 +9,8 @@ define(['msl20n'], function(avalon) {
             testNumber: 4,
             objectsNum: 3,
         },
-        // currentLocale: 'en-US',
+        currentLocale: 'en-US',
+        AttributeL20nAuto: 'Attribute',
         changeLocale: function(newLocale) {
             // vmmodel.currentLocale = newLocale;
             avalon.changeLocale(newLocale, vmmodel.$id);
@@ -21,7 +22,8 @@ define(['msl20n'], function(avalon) {
         },
     })
 
-    avalon.scan();
+    avalon.scan()
+    avalon.localize(vmmodel.$id)
 
     avalon.log("加载avalon完毕，开始构建根VM与加载其他模块");
 
